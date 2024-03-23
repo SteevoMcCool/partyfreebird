@@ -9,11 +9,12 @@ function r(res, info){
 }
 
 APP.get("/", async (req, res) => {
+    console.log("ATTEMPT");
     res.sendFile("./Client/index.html", {root: __dirname});
     
 }) 
 
 
-APP.listen(3000, ()=>{
-    console.log("http://localhost:3000");
+APP.listen(80, ()=>{
+    console.log("HERE AT PORT 80!!!");
 });
