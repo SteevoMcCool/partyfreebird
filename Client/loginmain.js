@@ -1,6 +1,8 @@
 
-let decoder = new TextDecoder("utf-8")
 let ip = "http://localhost:0080"
+
+
+let decoder = new TextDecoder("utf-8")
 let deb = false
 let DOM = {
     errorDisplay: document.getElementById("error"),
@@ -45,6 +47,8 @@ DOM.loginBu.addEventListener("click",async function(){
     if (stuff.status != 3){
         error(stuff.details)
     }else {
+        window.localStorage.setItem("em",email)
+        window.localStorage.setItem("ps",pass)
         window.location.replace("/homePage")
     }
     deb = false
