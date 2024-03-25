@@ -1,5 +1,5 @@
 let express = require("express")
-let Deck = require("./decks.js")
+/*let Deck = require("./decks.js")*/
 let APP = express();
 var cors = require('cors');
 var soupa = require('@supabase/supabase-js')
@@ -313,7 +313,7 @@ function generateGameInstance(gameType){
     }
 }
 
-APP.post("/acceptChallenge", async (req, res) =>{
+/*APP.post("/acceptChallenge", async (req, res) =>{
     let userID = Number(req.query.userID);
     let password = req.query.encodedPass;
     let challenge = body.challenge;
@@ -335,7 +335,7 @@ APP.post("/acceptChallenge", async (req, res) =>{
         return r(res, {status: 4, details:`No user found with id=${userID} and  pass id=${password} and status==0 (sts=${user && user.status || 'NOUSER'})`})
    
     }
-})
+}) */
 
 APP.listen(80, ()=>{
     console.log("HERE AT PORT 80!!!");

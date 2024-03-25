@@ -6,4 +6,4 @@ class Bridges {
 
 
 
-export default Bridges
+return Bridges

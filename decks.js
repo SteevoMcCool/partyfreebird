@@ -133,4 +133,4 @@ class Deck {
 
 
 
-export default Deck;
+return Deck;
