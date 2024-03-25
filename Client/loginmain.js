@@ -1,5 +1,5 @@
 
-let ip = "http://localhost:0080"
+let ip = "http://partyfreebirds.com"
 
 
 let decoder = new TextDecoder("utf-8")
