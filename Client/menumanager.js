@@ -32,7 +32,7 @@ async function loadMenu() {
        console.log(_user.details)
        window.location.replace("homePage")
     }else {
-        user = user.details
+        user = _user.details
         let unreads = await fetch(`${ip}/getTimestampOfMostRecentMessage?userID=${user.id}&chatIDs=(${user.chats.active.join()})`)
         unreads =  (await getInfo(unreads)).filter(c => c[0] > c[1])
         unrdDisp.innerText = unreads.length
