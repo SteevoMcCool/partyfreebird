@@ -1,4 +1,4 @@
-let ip = 'http://localhost'
+let ip = 'http://partyfreebirds.com'
 let decoder = new TextDecoder("utf-8")
 let user = false
 
