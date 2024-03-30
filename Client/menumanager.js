@@ -1,5 +1,6 @@
-let ip = "http://partyfreebirds.com"
+let ip = 'http://localhost'
 let decoder = new TextDecoder("utf-8")
+let user = false
 
 document.body.insertAdjacentHTML("afterbegin",
 `&nbsp;&nbsp;<div id = "menu">&nbsp;  <button id = "home">Home</button>  <button id = "help">Help</button><button id = "settings">Settings</button><button id = "profile">Profile</button><button id = "chats">Chats (<span>0</span>)</button></div>
@@ -17,19 +18,19 @@ async function getInfo(response){
     }
     return await JSON.parse(chunks.join(""))
 }
-
 async function loadMenu() {
     let email = window.localStorage.getItem("em")
     let pass = window.localStorage.getItem("ps")
     let stuff = await fetch(`${ip}/login?email=${email}&password=${pass}`)
-    let user = await getInfo(stuff)
+    let _user = await getInfo(stuff)
 
     let chatDisp = document.getElementById('chats')
     let profDisp = document.getElementById('profile')
     let unrdDisp = chatDisp.querySelectorAll("span")[0]
-    console.log(user.details)
-    if (user.status != 3){
-       console.log(user.details)
+    console.log(_user.details)
+    if (_user.status != 3){
+       console.log(_user.details)
+       window.location.replace("homePage")
     }else {
         user = user.details
         let unreads = await fetch(`${ip}/getTimestampOfMostRecentMessage?userID=${user.id}&chatIDs=(${user.chats.active.join()})`)

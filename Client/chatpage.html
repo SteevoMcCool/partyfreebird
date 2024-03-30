@@ -22,12 +22,18 @@
             <div id="msgArea">
 
             </div>
+            <div class="bottom15to35" id="cradle" style="visibility: collapse;">
+            </div>
             <div class="bottom15">
                 <textarea id="bodymsg" style="height: 80%; width: 80% ; margin: 5px 12px;"></textarea>
-                <button id="send" style="position: relative;bottom: 10px;font-size: 1.5em;">SEND</button>
+                <span style="display: inline-flex; position: relative; bottom: 55%; flex-direction: column;align-content: space-around;">
+                    <label for="fileHolder" style="margin-bottom: 2px;">🖼️</label>
+                    <button id="send" >SEND</button>
+                </span>
             </div>
         </div>
     </div>
+    <input type="file" accept="image/png, image/jpeg" multiple id="fileHolder" style="display: none;">
     <script src="menuManager"></script>
     <script src="chatManager"></script>
 </body>

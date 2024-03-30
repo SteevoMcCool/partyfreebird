@@ -1,4 +1,4 @@
-let nums = [1,2,3,4,5,6,7,8,9,10,'J','Q','K','A']
+let nums = [2,3,4,5,6,7,8,9,10,'J','Q','K','A']
 let suits = ['Hearts','Diamonds','Clubs','Spades']
 function randInt(min,max){ //includes lower bound, does not include upper bound
     if (!max) { max = min; min  = 0}

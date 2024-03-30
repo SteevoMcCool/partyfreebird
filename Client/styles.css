@@ -94,6 +94,20 @@ body{
     height: 15%;
 }
 
+.bottom15to35 {
+    background-color: rgba(255,255,255,0.5);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-top: 1px solid gray;
+    position: absolute;
+    bottom: 15%;
+    width: 100%;
+    height: 20%;
+    display: flex;
+    align-content: space-around;
+    justify-content: space-around;
+}
+
 .sm {
     text-align: center;
     margin: 4px 4px;
@@ -171,6 +185,18 @@ body{
 
 }
 
+.error {
+    text-align: center;
+    color: rgb(210,0,0);
+
+}
+.error > p {
+    margin: 2px;
+}
+.error > h3 {
+    margin: 2px;
+}
+
 .upperRight {
     position: absolute;
     top: 20px;
@@ -209,3 +235,39 @@ body{
     background-color: rgb(245,235,245);
     box-shadow: 1px 1px 1px black;
 }
+
+.imageEmbed{
+    height: 150px;
+    width: 150px;
+    position: relative;
+    top: 0px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.bimage {
+    height: 150px; 
+    width: 150px;  
+    background-size: cover;
+    background-position: center; 
+    background-repeat: no-repeat; 
+    filter: blur(20px);
+    position: absolute;
+    top:0px;
+    left: 0px;
+    border-radius: 12px;
+    opacity: 0.4;
+}
+.emage{
+    height: 130px; 
+    width: 130px;  
+    background-size: contain;
+    background-position: center; 
+    background-repeat: no-repeat; 
+    filter: blur(0px);
+    position: absolute;
+    top:10px;
+    left: 10px;
+}
+
+

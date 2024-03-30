@@ -1,6 +1,8 @@
 let express = require("express")
-/*let Deck = require("./decks.js")*/
+let Deck = require("./decks.js")
 let APP = express();
+let dk = require("base64-arraybuffer")
+
 var cors = require('cors');
 var soupa = require('@supabase/supabase-js')
 const { time } = require("console")
@@ -28,6 +30,7 @@ const supabase = soupa.createClient("https://cczmmtoeoxibdtikzkjf.supabase.co", 
   let NAPC = "w-R't=Fv<j5VG?8gD,.9B\"/N&KlOq^U)(I:ue[>]*CY3~A1zx!M{a0Zo4bWncSQ@s}XHih6d_ `my+pT7Lk;r$P|fEJ2"
   
   function encode(str){
+      if (!str){return ''}
       let newSTR = ""
       for (let i = 0; i<str.length; i++){
           let c = str.charAt(i)
@@ -84,7 +87,6 @@ APP.get("/login",async (req,res)=>{
     console.log(email,pass, encode(pass))
     let {data, error} = await supabase.from('PlayerInfo').select().eq('email', email).maybeSingle()
     let user = data
-    console.log(user.password, toString(encode(pass))== toString(user.password))
     if (user && !error){
         if (pass== encode(user.password)){
             return r(res, {status:3,details:user})
@@ -136,7 +138,6 @@ APP.get("/getPublicProfile", async (req, res)=>{
 APP.get('/loginANDgetchatsfor',async (req,res)=>{
     let email = req.query.email
     let pass = req.query.password
-    console.log("CFOR", email,pass, encode(pass))
     let {data, error} = await supabase.from('PlayerInfo').select().eq('email', email).maybeSingle()
     let user = data
     if (user && !error){
@@ -195,7 +196,11 @@ APP.post("/sendMessage",async (req, res) => {
     let password = req.query.encodedPass;
 
     let message = req.body.message
-    console.log(req.body)
+
+    if (!chatID || !userID || !password || !message){
+        return r(res, {status:2, details: 'POOR REQUEST'})
+    }
+
     message.timestamp = Date.now()
     console.log(chatID,userID,password)
     let {data, error} = await supabase.from('PlayerInfo').select().eq('id', userID).eq('password',password).maybeSingle()
@@ -215,7 +220,23 @@ APP.post("/sendMessage",async (req, res) => {
             if (chat.chatlog.length >=500){
                 chat.chatlog.shift()
             }
+            
+            let embeds = message.embeds
+            for (let i = 0; i < embeds.length; i++){
+                let e = embeds[i]
+                if (e.type == 'IMAGE' && !e.link){
+                    let {data,error} = await supabase.storage.from('Embeds')
+                    .upload(`image${Date.now()}`, dk.decode(e.meta.blob), {
+                      contentType: e.meta.type
+                    })
+                    if (data) {
+                     e.link = ('https://cczmmtoeoxibdtikzkjf.supabase.co/storage/v1/object/public/' + data.fullPath)
+                     e.meta = {}
+                    }
+                }
+            }
             let cool = await supabase.from('Chats').update({participants: chat.participants,chatlog: chat.chatlog}).eq('id',chatID).maybeSingle().select().maybeSingle()
+
             message.chatID = Number(chatID)
             message.eventType = "CHAT"
             chat.participants.writers.forEach(w=>{
@@ -225,7 +246,9 @@ APP.post("/sendMessage",async (req, res) => {
                     )})
                 }
             })
-            console.log(cool.data.participants.writers, message)           
+            console.log(cool.data.participants.writers, message)    
+            return r(res, {status: 3, details:`Message Sent Cool!`})
+       
         }else{
             return r(res, {status: 4, details:`No user found with id=${userID} in  chat id=${chatID}`})
         }
@@ -239,6 +262,8 @@ function randInt(min,max){ //includes lower bound, does not include upper bound
 
     return Math.floor( Math.random() * (max - min) ) + min
 }
+
+let activeChallenges = []
 APP.post("/challengeChat", async (req, res) =>{
     let chatID = req.query.chatID;
     let userID = req.query.userID;
@@ -252,13 +277,15 @@ APP.post("/challengeChat", async (req, res) =>{
     if (data && !error){
         let {data, error} = await supabase.from('Chats').select().eq('id',chatID).maybeSingle()
         let chat = data
+        let cid = randInt(9999,99999999999).toString(36).concat(Date.now().toString(36)).toUpperCase()
         if (chat.participants.writers.findIndex(a=>a[0]==userID)>= 0) {
             message = {
                 message: `Engaurd! Challenge for ${game}!`,
                 embeds: [{
                     type: "CHALLENGE REQUEST",
-                    challengeID: randInt(9999,99999999999).toString(36).concat(Date.now().toString(36)).toUpperCase(),
+                    challengeID: cid,
                     timestamp: Date.now(),   
+                    playersInvolved: [userID],
                     meta: {
                         gameName: game,
                     }
@@ -287,6 +314,7 @@ APP.post("/challengeChat", async (req, res) =>{
                     )})
                 }
             })
+            activeChallenges.push(message);
             console.log(cool.data.participants.writers, message)           
         }else{
             return r(res, {status: 4, details:`No user found with id=${userID} in  chat id=${chatID}`})
@@ -296,24 +324,76 @@ APP.post("/challengeChat", async (req, res) =>{
     }
 } )
 
-function generateGameInstance(gameType){
-    if (gameType == "Bridges"){
-        return {
-            gameType: "Bridges",
-            score: [0,0],
-            decks: [Deck('standard'), Deck('standard')],
-            hands: [[],[]],
-            lanes: [
-                [ [] , [] ],
-                [ [] , [] ],
-                [ [] , [] ]
-            ],
-            moves:{},
+APP.get("/cancelChallenge", async function(req,res){
+    let chatID = Number(req.query.chatID);
+    let userID = Number(req.query.userID);
+    let password = req.query.encodedPass;
+    let challengeID = req.query.challengeID
+
+    
+    let {data, error} = await supabase.from('PlayerInfo').select().eq('status',40001).eq('id', userID).eq('password',password).maybeSingle()
+    let user = data
+    if (data && !error){
+        let i = 0;
+        let l = activeChallenges.length;
+        for (i; i < l; i++) {
+            let chal = activeChallenges[i]
+            console.log(chal.embeds[0].challengeID, challengeID)
+            if (chal.author == userID && chal.embeds[0].challengeID == challengeID) {
+                activeChallenges[i] = activeChallenges[l - 1]
+                activeChallenges.length = l - 1
+                console.log(`(${chal.embeds[0].playersInvolved.join()})`)
+                await supabase.from('PlayerInfo').update({status:0}).filter('id', 'in',`(${chal.embeds[0].playersInvolved.join()})`)
+
+                let oldChatLog = await supabase.from('Chats').select().eq('id',chatID).maybeSingle()
+                if (oldChatLog.data) {
+                    oldChatLog = oldChatLog.data.chatlog
+                }
+
+                let index = chal.id - oldChatLog[0].id
+                if (index >= 0 ){
+                    oldChatLog[index].embeds = [
+                        {
+                            type: "CHALLENGE ABORTED",
+
+                        }
+                    ]
+                    let chat = await supabase.from('Chats').update({chatlog: oldChatLog}).eq('id',chatID).maybeSingle().select().maybeSingle()
+                    if (chat) { chat = chat.data} else{
+                        return r(res, {status:6, details:'Challenge revoked but chat not updated'})
+                    }
+                    oldChatLog[index].eventType = "CHAT:UPDATEMESSAGE"
+                    oldChatLog[index].chatID = Number(chatID)
+                    chat.participants.writers.forEach(w=>{
+                        if (clients[`U${w[0]}`]){
+                            clients[`U${w[0]}`].forEach(sub => {sub.response.write(
+                                `data: ${JSON.stringify(oldChatLog[index])}\n\n`
+                            )})
+                        }
+                    })
+                }
+                return r(res, {status: 3, details:`Successfully Removed challenge!`})
+
+            }else if (chal.embeds[0].playersInvolved.includes(userID)) {
+
+                return r(res, {status: 8, details:`Considered removal, nothing happened`})
+
+            }
         }
+        return r(res, {status: 4, details:`No user found with id=${userID} in challenge id=${challengeID}`})
+
+    } else{
+        return r(res, {status: 4, details:`No user found with id=${userID} and  pass ${password} and status==40001 (sts=${user && user.status || 'NOUSER'})`})
+    }    
+})
+
+function generateGameInstance(chal,opp){
+    if (gameType == "Bridges"){
+        return new Bridges(chal,opp)
     }
 }
 
-/*APP.post("/acceptChallenge", async (req, res) =>{
+APP.post("/acceptChallenge", async (req, res) =>{
     let userID = Number(req.query.userID);
     let password = req.query.encodedPass;
     let challenge = body.challenge;
@@ -321,21 +401,21 @@ function generateGameInstance(gameType){
     if (data && !error){
         let newGame = await supabase.from("Games").insert({
             gameMeta:{
-                gameType: challenge.embeds.meta.gameName,
+                gameType: challenge.embeds[0].meta.gameName,
                 players: [challenge.author,userID]
             },
             moves: {
             }
         }).select().maybeSingle()
         newGame = newGame.data
-        activeGames[`G${newGame.id}`] = generateGameInstance(challenge.embeds.meta.gameName)
+        activeGames[`G${newGame.id}`] = generateGameInstance(challenge,userID)
         activeGames[`G${newGame.id}`].players = [challenge.author,userID]
         activeGames[`G${newGame.id}`].id = newGame.id
     }else{
-        return r(res, {status: 4, details:`No user found with id=${userID} and  pass id=${password} and status==0 (sts=${user && user.status || 'NOUSER'})`})
+        return r(res, {status: 4, details:`No user found with id=${userID} and  pass=${password} and status==0 (sts=${user && user.status || 'NOUSER'})`})
    
     }
-}) */
+})
 
 APP.listen(80, ()=>{
     console.log("HERE AT PORT 80!!!");
