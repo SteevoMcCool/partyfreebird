@@ -1,5 +1,4 @@
-import {ColorRGB} from "./color.js"
-
+let ColorRGB = colorStuff.ColorRGB
 let allTransitions = []
 function ManageTransitions(dt){
     allTransitions.filter(TR=>TR.playing).forEach(TR=>TR.frame(dt))
@@ -71,4 +70,4 @@ class Transition{
     }
 */
 
-export {Transition, ManageTransitions}
+let transStuff= {Transition, ManageTransitions}

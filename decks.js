@@ -10,6 +10,9 @@ class Card {
         this.data = data
         this.next = false
     }
+    toString() {
+        return `${this.data[0]} of ${this.data[1]}`
+    }
 }
 class Deck {
     constructor(topCard){
@@ -23,7 +26,7 @@ class Deck {
         }
     }
     static card(data){
-        return Card(data)
+        return new Card(data)
     }   
     fill(){
         suits.forEach(suit=>{
@@ -59,7 +62,7 @@ class Deck {
         }
     }
     bottomDeck(data){
-        let card = Card(data)
+        let card = new Card(data)
         if (this.size == 0){
             this.top = card
         }else{
@@ -70,11 +73,11 @@ class Deck {
         this.bottom = card
     }
     topDeck(data){
-        let card = Card(data)
+        let card = new Card(data)
         if (this.size == 0){
             this.bottom = card
         }
-        card.next = this.head
+        card.next = this.top
         this.top = card
         this.size+= 1
     }
@@ -129,8 +132,15 @@ class Deck {
         }
         return ret
     }
+    toString(){
+        let sf = `Size: ${this.size} ----\n`;
+        let thisCard = this.top;
+        for (let i = 0; i < this.size; i++) {
+            sf = sf.concat(thisCard.toString(),'\n')
+            thisCard = thisCard.next;
+        }
+        sf.concat("---------------")
+        return sf;
+    }
 }
-
-
-
-return Deck;
+exports.Deck = Deck

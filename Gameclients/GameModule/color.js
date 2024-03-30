@@ -34,4 +34,4 @@ class ColorRGB {
     }
 }
 
-export  {ColorRGB}
+let colorStuff =   {ColorRGB}

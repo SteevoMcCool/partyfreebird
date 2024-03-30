@@ -1,4 +1,4 @@
-let Deck= require("./decks.js")
+let Deck= require("./decks.js").Deck
 let cardScores = {
     CN2:  2,
     CN3:  3,
@@ -17,9 +17,9 @@ let cardScores = {
 }
 class Bridges {
     static maxPlayers = 2
-    constructor(challenge,opponentID){
-        this.gameType= challenge.embeds.meta.gameName,
-        this.players= [challenge.author,opponentID]
+    constructor(challenge){
+        this.gameType= 'BRIDGES',
+        this.players= challenge.playersInvolved,
         this.score = [0,0]
         this.decks = [
             Bridges.fullDeck(),
@@ -187,7 +187,4 @@ class Bridges {
 }
 
 
-
-
-
-return Bridges
+exports.Bridges =  Bridges

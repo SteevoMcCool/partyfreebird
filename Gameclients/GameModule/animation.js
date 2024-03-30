@@ -91,4 +91,4 @@ class Animation{
     }
 }
 
-export {Animation, ManageAnimations}
+let animStuff= {Animation, ManageAnimations}

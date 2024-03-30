@@ -1,7 +1,7 @@
  //shapes: drawn after camera transformations
  //gui: drawn without respect to the camera (drawn second)
 let gctx
-import {ColorRGB} from "./color.js"
+let ColorRGB = colorStuff.ColorRGB
 let Mice = [], Keybinds = []
 
 class Game {
@@ -523,4 +523,4 @@ window.addEventListener("mousemove",function(event){
 })
 
 
-export {Game, Camera, Rectangle,Line,DrawnImage,Group,Polygon, MouseManager, KeyboardManager}
+let gameStuff= {Game, Camera, Rectangle,Line,DrawnImage,Group,Polygon, MouseManager, KeyboardManager}

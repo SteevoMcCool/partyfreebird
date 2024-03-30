@@ -1,19 +1,19 @@
 let express = require("express")
-let Deck = require("./decks.js")
+let Deck = require("./decks.js").Deck
 let APP = express();
 let dk = require("base64-arraybuffer")
-
+let Bridges = require('./bridges.js').Bridges
 var cors = require('cors');
 var soupa = require('@supabase/supabase-js')
 const { time } = require("console")
 const { serialize } = require("v8");
 
-let activeGames = {}
+let activeGames = []
 let Supakey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjem1tdG9lb3hpYmR0aWt6a2pmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxMTE1MTUxMywiZXhwIjoyMDI2NzI3NTEzfQ.PaBnn4tD8nRkYZH0jE32VyL5sSp5oSuT9PHc7SFaqf4"
 
 function r(res, info){
     res.send(JSON.stringify(info))
-    console.log(info)
+    //console.log(info)
     return info
 }
 
@@ -51,6 +51,17 @@ APP.get("/", async (req, res) => {
 APP.get("/", async (req, res) => {
     res.sendFile("./Client/index.html", {root: __dirname});
 }) 
+APP.get("/gamePage",async (req, res) => {
+    res.sendFile("./Gameclients/gamepage.html", {root: __dirname});
+})
+APP.get('/gm', async (req, res) => {
+    res.sendFile(`./Gameclients/GameModule/${req.query.name}.js`, {root: __dirname});
+}) 
+APP.get('/gameClient', async (req, res) => {
+    res.sendFile(`./Gameclients/gameClient.js`, {root: __dirname});
+}) 
+
+
 
 APP.get("/main", async (req, res) => {
     res.sendFile("./Client/main.js", {root: __dirname});
@@ -84,7 +95,7 @@ APP.get("/chatManager", async (req, res)=>{
 APP.get("/login",async (req,res)=>{
     let email = req.query.email
     let pass = req.query.password
-    console.log(email,pass, encode(pass))
+    console.log("LOGIN",email,pass, encode(pass))
     let {data, error} = await supabase.from('PlayerInfo').select().eq('email', email).maybeSingle()
     let user = data
     if (user && !error){
@@ -104,7 +115,7 @@ APP.get("/getTimestampOfMostRecentMessage",async (req,res)=>{
     let {data, error} = await supabase.from('Chats').select().filter('id', 'in', chatIDs)
     let chats = data
     let sf = []
-    console.log(chatIDs, userID, chats)
+    //console.log(chatIDs, userID, chats)
     chats.forEach((chat)=>{
         if (chat && !error){
             let userdata = chat.participants.writers.find(w => w[0] == userID) 
@@ -166,7 +177,7 @@ APP.get("/beginlisteningtoevents", async (req, res)=>{
     res.flushHeaders();
     let userID = req.query.userID;
     let password = req.query.encodedPass;
-    console.log(userID,password)
+    //console.log(userID,password)
     let {data, error} = await supabase.from('PlayerInfo').select().eq('id', userID).eq('password',password).maybeSingle()
     let user = data
     if (data && !error){
@@ -202,7 +213,7 @@ APP.post("/sendMessage",async (req, res) => {
     }
 
     message.timestamp = Date.now()
-    console.log(chatID,userID,password)
+    //console.log(chatID,userID,password)
     let {data, error} = await supabase.from('PlayerInfo').select().eq('id', userID).eq('password',password).maybeSingle()
     let user = data
     if (data && !error){
@@ -246,7 +257,6 @@ APP.post("/sendMessage",async (req, res) => {
                     )})
                 }
             })
-            console.log(cool.data.participants.writers, message)    
             return r(res, {status: 3, details:`Message Sent Cool!`})
        
         }else{
@@ -266,12 +276,10 @@ function randInt(min,max){ //includes lower bound, does not include upper bound
 let activeChallenges = []
 APP.post("/challengeChat", async (req, res) =>{
     let chatID = req.query.chatID;
-    let userID = req.query.userID;
+    let userID = Number(req.query.userID);
     let password = req.query.encodedPass;
     let game = req.body.gameName
 
-    console.log(req.body)
-    console.log(chatID,userID,password)
     let {data, error} = await supabase.from('PlayerInfo').update({status:40001}).eq('id', userID).eq('password',password).eq('status',0).select().maybeSingle()
     let user = data
     if (data && !error){
@@ -286,9 +294,7 @@ APP.post("/challengeChat", async (req, res) =>{
                     challengeID: cid,
                     timestamp: Date.now(),   
                     playersInvolved: [userID],
-                    meta: {
-                        gameName: game,
-                    }
+                    gameName: game,
                 }],
             }
             message.timestamp = Date.now()
@@ -315,7 +321,6 @@ APP.post("/challengeChat", async (req, res) =>{
                 }
             })
             activeChallenges.push(message);
-            console.log(cool.data.participants.writers, message)           
         }else{
             return r(res, {status: 4, details:`No user found with id=${userID} in  chat id=${chatID}`})
         }
@@ -338,11 +343,9 @@ APP.get("/cancelChallenge", async function(req,res){
         let l = activeChallenges.length;
         for (i; i < l; i++) {
             let chal = activeChallenges[i]
-            console.log(chal.embeds[0].challengeID, challengeID)
             if (chal.author == userID && chal.embeds[0].challengeID == challengeID) {
                 activeChallenges[i] = activeChallenges[l - 1]
                 activeChallenges.length = l - 1
-                console.log(`(${chal.embeds[0].playersInvolved.join()})`)
                 await supabase.from('PlayerInfo').update({status:0}).filter('id', 'in',`(${chal.embeds[0].playersInvolved.join()})`)
 
                 let oldChatLog = await supabase.from('Chats').select().eq('id',chatID).maybeSingle()
@@ -354,8 +357,8 @@ APP.get("/cancelChallenge", async function(req,res){
                 if (index >= 0 ){
                     oldChatLog[index].embeds = [
                         {
-                            type: "CHALLENGE ABORTED",
-
+                            type: "CHALLENGE RESULTS",
+                            text: "Challenge Aborted"
                         }
                     ]
                     let chat = await supabase.from('Chats').update({chatlog: oldChatLog}).eq('id',chatID).maybeSingle().select().maybeSingle()
@@ -387,35 +390,113 @@ APP.get("/cancelChallenge", async function(req,res){
     }    
 })
 
-function generateGameInstance(chal,opp){
-    if (gameType == "Bridges"){
-        return new Bridges(chal,opp)
+function generateGameInstance(chal){
+    if (chal.embeds[0].gameName == "Bridges"){
+        console.log("CREATING BRIDGES")
+        return new Bridges(chal)
     }
 }
 
-APP.post("/acceptChallenge", async (req, res) =>{
+APP.get("/acceptChallenge", async (req, res) =>{
+    let chatID = Number(req.query.chatID);
     let userID = Number(req.query.userID);
     let password = req.query.encodedPass;
-    let challenge = body.challenge;
-    let {data, error} = await supabase.from('PlayerInfo').update({status:40002}).eq('id', userID).eq('password',password).eq('status',0).select().maybeSingle()
+    let challengeID = req.query.challengeID;
+    console.log("ACCEPT INFO " ,chatID, userID, password, challengeID)
+    let {data, error} = await supabase.from('PlayerInfo').select().eq('id', userID).eq('password',password).eq('status',0).select().maybeSingle()
+    let user = data
     if (data && !error){
-        let newGame = await supabase.from("Games").insert({
-            gameMeta:{
-                gameType: challenge.embeds[0].meta.gameName,
-                players: [challenge.author,userID]
-            },
-            moves: {
+        for (let i = 0; i < activeChallenges.length; i++){
+            let chal = activeChallenges[i]
+            let imp = chal.embeds[0]
+            if (chal.author == userID){
+                return r(res, {status: 2, details:`Cannot accept own challenge`})
             }
-        }).select().maybeSingle()
-        newGame = newGame.data
-        activeGames[`G${newGame.id}`] = generateGameInstance(challenge,userID)
-        activeGames[`G${newGame.id}`].players = [challenge.author,userID]
-        activeGames[`G${newGame.id}`].id = newGame.id
+            if (imp.challengeID == challengeID && chal.chatID == chatID && user.chats.active.includes(chatID)){
+                activeChallenges[i] = activeChallenges[activeChallenges.length - 1]
+                activeChallenges.length = activeChallenges.length - 1
+                imp.playersInvolved.push(userID)
+                console.log("PLAYERS INVOLVED" , imp.playersInvolved)
+                if (imp.playersInvolved.length == 2){
+                    activeGames.push({
+                        mid: chal.id,
+                        chatID: chatID,
+                        timestamp: Date.now(),
+                        GID: Number(`${Date.now()}${chatID}`),
+                        instance: generateGameInstance(chal)
+                    })
+                    await supabase.from('PlayerInfo').update({status: 40002}).filter('id','in',`(${imp.playersInvolved.join()})`).select()
+                    await supabase.from('PlayerInfo').update({current: {  
+                        mid: chal.id,
+                        chatID: chatID,
+                        timestamp: Date.now(),
+                        GID: Number(`${Date.now()}${chatID}`)
+                    }}).filter('id','in',`(${imp.playersInvolved.join()})`).select()
+
+                    imp.playersInvolved.forEach(pid=>{
+                        if (clients[`U${pid}`]){
+                            clients[`U${pid}`].forEach(sub => {sub.response.write(
+                                `data: {"eventType":"GAMESTART"}\n\n`
+                            )})
+                        }
+                    })
+                    let oldChatLog = await supabase.from('Chats').select().eq('id',chatID).maybeSingle()
+                    if (oldChatLog.data) {
+                        oldChatLog = oldChatLog.data.chatlog
+                    }
+                    let index = chal.id - oldChatLog[0].id
+                    if (index >= 0 ){
+                        oldChatLog[index].embeds = [
+                            {
+                                type: "CHALLENGE RESULTS",
+                                text: "Challenge in progress..."
+                            }
+                        ]
+                        let chat = await supabase.from('Chats').update({chatlog: oldChatLog}).eq('id',chatID).maybeSingle().select().maybeSingle()
+                        if (chat) { chat = chat.data} else{
+                            return r(res, {status:6, details:'Challenge accepted but chat not updated'})
+                        }
+                        oldChatLog[index].eventType = "CHAT:UPDATEMESSAGE"
+                        oldChatLog[index].chatID = Number(chatID)
+                        chat.participants.writers.forEach(w=>{
+                            if (clients[`U${w[0]}`]){
+                                clients[`U${w[0]}`].forEach(sub => {sub.response.write(
+                                    `data: ${JSON.stringify(oldChatLog[index])}\n\n`
+                                )})
+                            }
+                        })
+                    }
+                    return r(res, {status: 3, details:`Challenge accepted successfully! If needed, sending involved users to game!`})
+                }
+            }else{
+                return r(res, {status: 4, details:`User found but no challenge found with id==${challengeID} in a valid chat`})
+              
+            }
+        }
     }else{
         return r(res, {status: 4, details:`No user found with id=${userID} and  pass=${password} and status==0 (sts=${user && user.status || 'NOUSER'})`})
    
     }
 })
+APP.get("/currentGame",async (req, res)=>{
+    let userID = Number(req.query.userID)
+    let password = req.query.encodedPass
+    let {data, error} = await supabase.from('PlayerInfo').select().eq('id',userID).eq('password',password).maybeSingle()
+    if (data && !error){
+        let user = data
+        let current = (user.current || {id:"_"}).id
+        let index = activeGames.findIndex(game=>game.id == current)
+        if (index >= 0){
+            let thisgame  = activeGames[index]
+            return r(res, {statis:3, thisgame})
+        }else{
+            return r(res, {status: 4, details:`User not in any known game!`})           
+        }
+    }else{
+        return r(res, {status: 4, details:`No user found with id=${userID} and  pass ${password}`})
+    }   
+})
+
 
 APP.listen(80, ()=>{
     console.log("HERE AT PORT 80!!!");

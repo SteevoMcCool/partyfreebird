@@ -1,4 +1,4 @@
-let ip = 'http://partyfreebirds.com'
+let ip = "http://localhost" //'http://partyfreebirds.com'
 let decoder = new TextDecoder("utf-8")
 let user = false
 
@@ -30,7 +30,7 @@ async function loadMenu() {
     console.log(_user.details)
     if (_user.status != 3){
        console.log(_user.details)
-       window.location.replace("homePage")
+       window.location.replace("loginPage")
     }else {
         user = _user.details
         let unreads = await fetch(`${ip}/getTimestampOfMostRecentMessage?userID=${user.id}&chatIDs=(${user.chats.active.join()})`)
@@ -48,3 +48,4 @@ async function loadMenu() {
 let home = document.getElementById("home")
 home.onclick = function(){window.location.replace("homePage")}
 loadMenu()
+

@@ -88,17 +88,7 @@ async function processImageInput(){
 
 DOM.fileHolder.oninput = processImageInput
 
-async function getInfo(response){
-    let chunks = []
-    let reader = await response.body.getReader()
-    let done = false
-    while (!done){
-        let v = await reader.read()
-        done = v.done
-        if (v.value){chunks.push(decoder.decode(v.value))}
-    }
-    return await JSON.parse(chunks.join(""))
-}
+
 let cis = []
 let big_chat, big_other
 let currentDropdown
@@ -145,16 +135,16 @@ function loadEmbeds(chat){
             if (chat.author==user.id){
                 sf  = sf.concat(`<button class='CANCELBU' onclick=cancel(${chat.id}) >Cancel</button>`, "\n")
             }else{
-                sf  = sf.concat(`<button class='ACCEPTBU'>Accept</button>`, "\n")
+                sf  = sf.concat(`<button class='ACCEPTBU' onclick=accept(${chat.id})>Accept</button>`, "\n")
             }
-        }else if (embed.type == "CHALLENGE ABORTED"){
-            sf  = sf.concat(`<button class='none'>Challenge Aborted</button>`, "\n")
+        }else if (embed.type == "CHALLENGE RESULTS"){
+            sf  = sf.concat(`<button class='none'>${embed.text}</button>`, "\n")
         }else if (embed.type == "IMAGE"){
                 sf = sf.concat(`       
                 <div class="imageEmbed">
                     <div class="bimage" style="background-image: url('${embed.link}');">
                     </div>
-                    <div class="emage" style="background-image: url('${embed.link}')">
+                    <div class="emage" style="background-image: url('${embed.link}')" onclick=magnify('${embed.link}')>
                     </div>
                 </div>
                 `)
@@ -164,13 +154,34 @@ function loadEmbeds(chat){
     sf = sf.concat("</div>")
     return sf
 }
-
+function magnify(link){
+    let div = document.createElement("div");
+    div.innerHTML = `<img style="height: 65%; position: absolute; top: 17.5%; left: 50%; transform: translate(-50%, 0%)" src='${link}'>`
+    div.style.backgroundColor = `rgba(0,0,0,0.3)`
+    div.style.position = 'absolute'
+    div.style.top= '0';
+    div.style.height = '100vh'
+    div.style.width = '100vw'
+    div.onclick= function(){div.remove()}
+    document.body.appendChild(div)
+}
 async function cancel(id){
     let cl = big_chat.chatlog
     let index = id - cl[0].id
     if (index > 0){
         let chal = cl[index]
         let info = await fetch(`${ip}/cancelChallenge?userID=${user.id}&chatID=${big_chat.id}&encodedPass=${user.password}&challengeID=${chal.embeds[0].challengeID}`)
+        console.log(await getInfo(info))
+ }
+}
+
+async function accept(id){
+    let cl = big_chat.chatlog
+    let index = id - cl[0].id
+    if (index > 0){
+        let chal = cl[index]
+        console.log(chal)
+        let info = await fetch(`${ip}/acceptChallenge?userID=${user.id}&chatID=${big_chat.id}&encodedPass=${user.password}&challengeID=${chal.embeds[0].challengeID}`)
         console.log(await getInfo(info))
  }
 }
@@ -258,6 +269,7 @@ async function loadChats() {
 }
 
 
+
 async function beginListeningToEvents(){
     console.log(user.id, user.password)
     let chatEvents = new EventSource(`${ip}/beginlisteningtoevents?userID=${user.id}&encodedPass=${user.password}`);
@@ -323,6 +335,9 @@ async function beginListeningToEvents(){
                     ${loadEmbeds(chat)}
                 ` 
             }
+        }else if (chat.eventType=="GAMESTART"){
+            window.open(`${ip}/gamePage`, '_blank');
+
         }
 
     })

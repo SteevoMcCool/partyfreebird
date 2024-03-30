@@ -271,3 +271,42 @@ body{
 }
 
 
+
+.split7525 {
+    display: grid;
+    grid-template-columns: 74% 26%;
+    grid-template-rows: 100%;
+    height: calc(99vh - 50px);
+}
+
+.gameChat {
+    width: calc(100% - 5px);
+    height: 95%;
+    border-radius: 20px;
+    margin-top: 5%;
+    background-color: rgba(255,255,255,0.5);
+    position: relative;
+    top: 0px;
+}
+
+.gameChat .bottom15 {
+}
+
+.gameChat .message {
+    border-top: 1px solid gray;
+    border-bottom: 1px solid gray;
+    border-radius: 20px;
+
+}
+
+.gameChat .message > h4 {
+    margin: 10px;
+    margin-top: 2px;
+    margin-bottom: 0px; 
+}
+
+.gameChat .message > p {
+    margin: 10px;
+    margin-top: 2px;
+    margin-bottom: 0px;
+}

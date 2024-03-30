@@ -74,4 +74,4 @@ class Velocity{
 }
 //manageAccelerations and ManageVelocities are meant to be called sequentially in your game.onUpdate() looop
 
-export {Velocity,ManageAccelerations,ManageVelocities}
+let physStuff =  {Velocity,ManageAccelerations,ManageVelocities}
