@@ -5,7 +5,7 @@ let dk = require("base64-arraybuffer")
 let Bridges = require('./bridges.js').Bridges
 var cors = require('cors');
 var soupa = require('@supabase/supabase-js')
-const { time } = require("console")
+const { time, log } = require("console")
 const { serialize } = require("v8");
 
 let activeGames = []
@@ -58,7 +58,8 @@ APP.get('/gm', async (req, res) => {
     res.sendFile(`./Gameclients/GameModule/${req.query.name}.js`, {root: __dirname});
 }) 
 APP.get('/gameClient', async (req, res) => {
-    res.sendFile(`./Gameclients/gameClient.js`, {root: __dirname});
+    console.log("SENDING GAME CLIENT...")
+    res.sendFile("./Gameclients/gameClient.js", {root: __dirname});
 }) 
 
 
@@ -479,6 +480,7 @@ APP.get("/acceptChallenge", async (req, res) =>{
     }
 })
 APP.get("/currentGame",async (req, res)=>{
+    console.log("HERE HERE HERE")
     let userID = Number(req.query.userID)
     let password = req.query.encodedPass
     let {data, error} = await supabase.from('PlayerInfo').select().eq('id',userID).eq('password',password).maybeSingle()
@@ -497,6 +499,83 @@ APP.get("/currentGame",async (req, res)=>{
     }   
 })
 
+APP.post("/sendGameChat",async (req, res)=>{
+    let userID = Number(req.query.userID)
+    let pass = req.query.encodedPass
+    let GID = Number(req.query.gameID)
+    for (let i = 0; i < activeGames.length; i++){
+        let game = activeGames[i]
+        if (game.GID == GID && game.instance.players.includes(userID)){
+            let login = await supabase.from('PlayerInfo').select().eq('id', userID).eq('password',pass).select().maybeSingle()
+            if (login.data && !login.error){
+                if (req.body.text == "/resign"){
+                    await supabase.from('PlayerInfo').update({status: 0}).filter('id','in',`(${game.instance.players.join()})`).select()
+                    if (game.chatID) {
+                        let chatID = game.chatID
+                        let neededChat = await supabase.from('Chats').select().eq('id',chatID).select().maybeSingle()
+                        if (neededChat.data && !neededChat.error){
+                            let oldChatLog = neededChat.data.chatlog
+                            let index = game.mid - oldChatLog[0].id
+                            if (index >= 0 ){
+                                oldChatLog[index].embeds = [
+                                    {
+                                        type: "CHALLENGE RESULTS",
+                                        text: `Congrats to the winner! (It wasnt ${login.data.profile.username} ;)`
+                                    }
+                                ]
+                                let chat = await supabase.from('Chats').update({chatlog: oldChatLog}).eq('id',chatID).maybeSingle().select().maybeSingle()
+                                if (chat) { chat = chat.data} else{
+                                    return r(res, {status:6, details:'Challenge accepted but chat not updated'})
+                                }
+                                oldChatLog[index].eventType = "CHAT:UPDATEMESSAGE"
+                                oldChatLog[index].chatID = Number(chatID)
+                                chat.participants.writers.forEach(w=>{
+                                    if (clients[`U${w[0]}`]){
+                                        clients[`U${w[0]}`].forEach(sub => {sub.response.write(
+                                            `data: ${JSON.stringify(oldChatLog[index])}\n\n`
+                                        )})
+                                    }
+                                })
+                            }                            
+                        }
+                    }
+                    game.instance.players.forEach(pID=>{
+                        if (clients[`U${pID}`]){
+                            clients[`U${pID}`].forEach(sub => {sub.response.write(
+                                `data: ${JSON.stringify({
+                                    eventType: "GAME:CHAT",
+                                    author: "__SERVER",
+                                    text: `${login.data.profile.username} resigned! You may close the tab.
+                                    <br><i style='font-size:0.8em'> Note: The chatroom is now closed. </i>`   
+                                })}\n\n`
+                            )})
+                        }
+                    })
+                    activeGames[i] = activeGames[activeGames.length - 1]
+                    activeGames.length = activeGames.length - 1
+                    return r(res, {status:3, details: `Player Resigned Succesfully`})     
+                }
+                game.instance.players.forEach(pID=>{
+                    if (clients[`U${pID}`]){
+                        clients[`U${pID}`].forEach(sub => {sub.response.write(
+                            `data: ${JSON.stringify({
+                                eventType: "GAME:CHAT",
+                                author: login.data.profile.username,
+                                text: req.body.text   
+                            })}\n\n`
+                        )})
+                    }
+                })
+
+                return r(res, {status:3, details: `Chat sent successfully!`})
+            }else{
+                return r(res, {status:4, details: `Could not lock in user with id=${GID} and password=${pass}`})
+            }
+        }
+
+    }
+    return r(res, {status:4, details: `No game found with id=${GID} containing user id=${userID}`})
+})
 
 APP.listen(80, ()=>{
     console.log("HERE AT PORT 80!!!");

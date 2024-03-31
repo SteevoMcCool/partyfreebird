@@ -19,7 +19,7 @@ class Bridges {
     static maxPlayers = 2
     constructor(challenge){
         this.gameType= 'BRIDGES',
-        this.players= challenge.playersInvolved,
+        this.players= challenge.embeds[0].playersInvolved,
         this.score = [0,0]
         this.decks = [
             Bridges.fullDeck(),
