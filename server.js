@@ -294,7 +294,9 @@ APP.post("/challengeChat", async (req, res) =>{
                     type: "CHALLENGE REQUEST",
                     challengeID: cid,
                     timestamp: Date.now(),   
-                    playersInvolved: [userID],
+                    playersInvolved: [
+                        [userID, user.profile.username, user.profile.pfp]
+                    ],
                     gameName: game,
                 }],
             }
@@ -416,7 +418,7 @@ APP.get("/acceptChallenge", async (req, res) =>{
             if (imp.challengeID == challengeID && chal.chatID == chatID && user.chats.active.includes(chatID)){
                 activeChallenges[i] = activeChallenges[activeChallenges.length - 1]
                 activeChallenges.length = activeChallenges.length - 1
-                imp.playersInvolved.push(userID)
+                imp.playersInvolved.push(  [userID, user.profile.username, user.profile.pfp])
                 console.log("PLAYERS INVOLVED" , imp.playersInvolved)
                 if (imp.playersInvolved.length == 2){
                     activeGames.push({
@@ -434,9 +436,9 @@ APP.get("/acceptChallenge", async (req, res) =>{
                         GID: Number(`${Date.now()}${chatID}`)
                     }}).filter('id','in',`(${imp.playersInvolved.join()})`).select()
 
-                    imp.playersInvolved.forEach(pid=>{
-                        if (clients[`U${pid}`]){
-                            clients[`U${pid}`].forEach(sub => {sub.response.write(
+                    imp.playersInvolved.forEach(p=>{
+                        if (clients[`U${p[0]}`]){
+                            clients[`U${p[0]}`].forEach(sub => {sub.response.write(
                                 `data: {"eventType":"GAMESTART"}\n\n`
                             )})
                         }
